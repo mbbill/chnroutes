@@ -1,0 +1,4 @@
+#!/bin/bash
+./chnroutes.py -p linux
+chmod +x ./nm-up
+sudo cp ./nm-up /etc/NetworkManager/dispatcher.d/nm-up

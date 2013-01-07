@@ -44,18 +44,40 @@ def generate_linux(metric):
     OLDGW=`cat /tmp/vpn_oldgw`
     
     """)
+
+    nmupscript_header=textwrap.dedent("""\
+    #!/bin/bash -e
+    if [ -z "$1" ]; then
+        echo "$0: called with no interface" 1>&2
+        exit 1;
+    fi
+    if [[ "$1" != "ppp0" ]] || [[ "$2" != "vpn-up" ]]; then
+        exit 1;
+    fi
+    export PATH="/bin:/sbin:/usr/sbin:/usr/bin:$PATH"
+    OLDGW=`ip route show | grep -e 'wlan0\s*proto\s*static' | sed -e 's/^.*via \\([^ ]*\\).*$/\\1/'`
+    if [[ $OLDGW == '' ]]; then
+        exit 1;
+    fi
+
+    """)
+    
     
     upfile=open('ip-pre-up','w')
     downfile=open('ip-down','w')
+    nmupfile=open('nm-up','w')
     
     upfile.write(upscript_header)
     upfile.write('\n')
     downfile.write(downscript_header)
     downfile.write('\n')
+    nmupfile.write(nmupscript_header)
+    nmupfile.write('\n')
     
     for ip,mask,_ in results:
         upfile.write('route add -net %s netmask %s gw $OLDGW\n'%(ip,mask))
         downfile.write('route del -net %s netmask %s\n'%(ip,mask))
+        nmupfile.write('route add -net %s netmask %s gw $OLDGW\n'%(ip,mask))
 
     downfile.write('rm /tmp/vpn_oldgw\n')
 
